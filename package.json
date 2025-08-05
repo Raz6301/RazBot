@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "discord-giveaways": "^6.0.1",
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.2.0",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "ms": "^2.1.3"
+  },
+  "name": "razbot-final-complete",
+  "version": "1.0.0",
+  "description": "RazBot הוא בוט דיסקורד עם לוח בקרה ווב שכולל:",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

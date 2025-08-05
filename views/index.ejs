@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>לוח בקרה - RazBot</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    section.dashboard-card {
+      display: none;
+    }
+    section.dashboard-card.show {
+      display: block;
+    }
+    .button.small {
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      margin: 0 4px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .reroll {
+      background-color: #ffcc00;
+      color: black;
+    }
+    .end {
+      background-color: #ff4444;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h2>🧱 תפריט</h2>
+      <ul>
+        <li><a href="#stats">📊 סטטיסטיקות</a></li>
+        <li><a href="#giveaways">🎁 הגרלות</a></li>
+        <li><a href="#messages">💬 הודעות</a></li>
+        <li><a href="#filters">❌ סינון</a></li>
+        <li><a href="#ticket">🎟️ טיקטים</a></li>
+        <li><a href="#invites">📨 הזמנות</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+      <section id="stats" class="dashboard-card">
+        <h2>📊 סטטיסטיקות</h2>
+        <div class="stats-box">
+          <div class="stat"><strong><%= stats.users %></strong> משתמשים</div>
+          <div class="stat"><strong><%= stats.channels %></strong> חדרים</div>
+          <div class="stat"><strong><%= stats.roles %></strong> רולים</div>
+        </div>
+      </section>
+
+      <section id="giveaways" class="dashboard-card">
+        <h2>🎁 יצירת הגרלה חדשה</h2>
+        <form method="POST" action="/start-giveaway">
+          <input type="text" name="giveawayChannel" placeholder="שם החדר">
+          <input type="text" name="giveawayDuration" placeholder="משך ההגרלה (10m, 1h)">
+          <input type="number" name="giveawayWinners" placeholder="מספר זכים">
+          <input type="text" name="giveawayPrize" placeholder="הפרס">
+          <button type="submit">🚀 התחל הגרלה</button>
+        </form>
+
+        <h3>🎉 הגרלות פעילות</h3>
+        <ul id="activeGiveawaysList"><li>טוען...</li></ul>
+
+        <hr>
+
+        <h3>🕑 הגרלות שהסתיימו</h3>
+        <ul id="endedGiveawaysList"><li>טוען...</li></ul>
+      </section>
+
+      <section id="messages" class="dashboard-card">
+        <h2>💬 ניהול הודעות</h2>
+        <p>📥 ברוך הבא: <%= messages.welcome %></p>
+        <p>🔗 הזמנה: <%= messages.invite %></p>
+        <p>⚠️ שגיאה: <%= messages.error %></p>
+      </section>
+
+      <section id="filters" class="dashboard-card">
+        <h2>❌ סינון מילים / קישורים</h2>
+        <form method="POST" action="/toggle-blockLinks">
+          <button type="submit">לינקים: <%= config.blockLinks ? "מופעל" : "כבוי" %></button>
+        </form>
+        <form method="POST" action="/toggle-blockPings">
+          <button type="submit">פינגים: <%= config.blockPings ? "מופעל" : "כבוי" %></button>
+        </form>
+        <form method="POST" action="/add-badword">
+          <input type="text" name="word" placeholder="הוסף מילה אסורה">
+          <button type="submit">➕ הוסף</button>
+        </form>
+      </section>
+
+      <section id="ticket" class="dashboard-card">
+        <h2>🎟️ שליחת טיקט</h2>
+   <form method="POST" action="/send-ticket-button">
+  <input type="text" name="ticketChannel" placeholder="שם החדר">
+  <input type="text" name="ticketMessage" placeholder="תוכן ההודעה">
+  <input type="text" name="closedCategory" placeholder="שם הקטגוריה לטיקטים סגורים">
+  <button type="submit">📩 שלח</button>
+</form>
+      </section>
+
+      <section id="invites" class="dashboard-card">
+        <h2>📨 הזמנות</h2>
+        <ul id="invitesList"><li>טוען...</li></ul>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    async function fetchGiveaways() {
+      try {
+        const res = await fetch("/api/giveaways");
+        const giveaways = await res.json();
+        const active = giveaways.filter(g => !g.ended);
+        const ended = giveaways.filter(g => g.ended);
+        const activeList = document.getElementById("activeGiveawaysList");
+        const endedList = document.getElementById("endedGiveawaysList");
+        activeList.innerHTML = active.length === 0 ? "<li>אין כרגע הגרלות פעילות.</li>" : "";
+        endedList.innerHTML = ended.length === 0 ? "<li>אין עדיין הגרלות שהסתיימו.</li>" : "";
+        active.forEach(g => {
+          activeList.innerHTML += `<li><strong>🎁 ${g.prize}</strong> | זכים: ${g.winnerCount} | מסתיימת: ${new Date(g.endAt).toLocaleString("he-IL")}
+    <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
+<button class="button small reroll">🎲 רירול</button>
+</form>
+
+<form method="POST" action="/end-giveaway/${g.messageId}" style="display:inline;">
+<button class="button small end">⛔ סיום</button>
+</form>
+
+          </li>`;
+        });
+      ended.forEach(g => {
+  endedList.innerHTML += `
+    <li>
+      <strong>🎁 ${g.prize}</strong> | זכים: ${g.winnerCount} | הסתיימה: ${new Date(g.endAt).toLocaleString("he-IL")}
+      <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
+        <button class="button small reroll">🎲 רירול</button>
+      </form>
+      <form method="POST" action="/delete-giveaway" style="display:inline;">
+        <input type="hidden" name="giveawayId" value="${g.messageId}">
+        <button class="button small delete">🗑️ מחק</button>
+      </form>
+    </li>`;
+});
+
+      } catch (err) {
+        console.error("שגיאה בטעינת הגרלות:", err);
+      }
+    }
+
+    async function fetchInvites() {
+      try {
+        const res = await fetch("/api/invites");
+        const invites = await res.json();
+        const list = document.getElementById("invitesList");
+        list.innerHTML = invites.length === 0 ? "<li>אין נתוני הזמנות זמינים.</li>" : "";
+        invites.forEach(i => {
+          list.innerHTML += `<li><strong>${i.username}</strong> הזמין ${i.count} משתמשים</li>`;
+        });
+      } catch (err) {
+        console.error("שגיאה בטעינת הזמנות:", err);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const links = document.querySelectorAll(".sidebar a");
+      const saved = localStorage.getItem("lastSection") || "stats";
+      showSection(saved);
+      links.forEach(link => link.addEventListener("click", e => {
+        e.preventDefault();
+        showSection(link.getAttribute("href").substring(1));
+      }));
+      fetchGiveaways();
+      fetchInvites();
+    });
+
+    function showSection(id) {
+      document.querySelectorAll(".dashboard-card").forEach(sec => sec.classList.remove("show"));
+      const target = document.getElementById(id);
+      if (target) target.classList.add("show");
+      history.replaceState(null, null, `#${id}`);
+      localStorage.setItem("lastSection", id);
+    }
+  </script>
+</body>
+</html>
