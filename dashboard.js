@@ -73,7 +73,9 @@ app.get("/api/invites", async (req, res) => {
 
 app.post("/send-ticket-button", async (req, res) => {
   const channelName = req.body.ticketChannel?.trim();
-  const messageText = req.body.ticketMessage?.trim();
+
+  // פה מוסיפים את ההמרה לירידת שורה
+  const messageText = req.body.ticketMessage?.trim().replace(/\\n/g, '\n').replace(/<br>/g, '\n');
   const closedCategory = req.body.closedCategory?.trim(); // 👈 נוספה קריאה לשם הקטגוריה
   const channel = guild.channels.cache.find(c => c.name === channelName);
   if (!channel || !messageText) return res.redirect("/");
