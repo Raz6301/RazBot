@@ -1,10 +1,53 @@
+/*
+ * הגדרות עיצוב בסיסיות ונגישות.
+ * משתמשות במשתני CSS כדי לאפשר התאמה קלה של צבעים ונראות.
+ */
+/*
+ * Theme variables using CSS custom properties.
+ * By default the document is in dark mode. A light theme can be activated
+ * by setting data-theme="light" on the root element. This allows
+ * dynamic switching between dark and light modes via JavaScript without
+ * regenerating the stylesheet.
+ */
+
+:root {
+  /* Dark theme (default) */
+  --bg-color: #0e0e0e;
+  --text-color: #f1f1f1;
+  --primary-color: #44ff44;
+  --card-bg: #1a1a1a;
+  --sidebar-bg: #141414;
+  --input-bg: #2a2a2a;
+  --input-border: #444;
+  --button-bg: #44ff44;
+  --button-text: #000000;
+  --button-hover-bg: #ffffff;
+  --button-hover-color: #44ff44;
+}
+
+/* Light theme variables override the default dark values when
+   data-theme="light" is present on the root element. */
+:root[data-theme="light"] {
+  --bg-color: #f8f8f8;
+  --text-color: #121212;
+  --primary-color: #0066ff;
+  --card-bg: #ffffff;
+  --sidebar-bg: #f0f0f0;
+  --input-bg: #ffffff;
+  --input-border: #ccc;
+  --button-bg: #0066ff;
+  --button-text: #ffffff;
+  --button-hover-bg: #e6e6e6;
+  --button-hover-color: #0066ff;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background-color: #0e0e0e;
-  color: #f1f1f1;
+  background-color: var(--bg-color);
+  color: var(--text-color);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   direction: rtl;
   margin: 0;
@@ -33,17 +76,17 @@ section.show {
   top: 0;
   bottom: 0;
   width: 220px;
-  background-color: #1b1b1b;
+  background-color: var(--sidebar-bg);
   padding: 30px 20px;
   box-shadow: 0 0 15px #111;
-  border-left: 4px solid #44ff44;
+  border-left: 4px solid var(--primary-color);
   overflow-y: auto;
   z-index: 1000;
 }
 
 .sidebar h2 {
   font-size: 22px;
-  color: #44ff44;
+  color: var(--primary-color);
   margin-bottom: 20px;
 }
 
@@ -57,14 +100,14 @@ section.show {
 }
 
 .sidebar ul li a {
-  color: #fff;
+  color: var(--text-color);
   text-decoration: none;
   font-weight: bold;
   transition: 0.2s;
 }
 
 .sidebar ul li a:hover {
-  color: #44ff44;
+  color: var(--primary-color);
 }
 
 .main {
@@ -74,23 +117,23 @@ section.show {
 }
 
 .dashboard-card {
-  background-color: #1e1e1e;
+  background-color: var(--card-bg);
   padding: 25px;
   border-radius: 16px;
   margin-bottom: 25px;
-  box-shadow: 0 0 15px rgba(54, 255, 71, 0.2);
+  box-shadow: 0 0 15px rgba(54, 255, 71, 0.15);
 }
 
 .dashboard-card h2 {
-  color: #44ff44;
-  text-shadow: 0 0 5px #44ff44, 0 0 10px #44ff44;
+  color: var(--primary-color);
+  text-shadow: 0 0 5px var(--primary-color), 0 0 10px var(--primary-color);
   margin-bottom: 15px;
 }
 
 input, button {
-  background-color: #2a2a2a;
-  color: #fff;
-  border: 1px solid #444;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--input-border);
   border-radius: 10px;
   padding: 10px;
   margin: 5px 0;
@@ -99,16 +142,30 @@ input, button {
 }
 
 button {
-  background-color: #44ff44;
-  color: #000;
+  background-color: var(--button-bg);
+  color: var(--button-text);
   font-weight: bold;
-  box-shadow: 0 0 10px #44ff44;
+  box-shadow: 0 0 10px var(--button-bg);
   cursor: pointer;
 }
 
 button:hover {
-  background-color: #fff;
-  color: #44ff44;
+  background-color: var(--button-hover-bg);
+  color: var(--button-hover-color);
+}
+
+/* Top bar for language and theme toggles */
+.topbar {
+  background-color: var(--sidebar-bg);
+  padding: 10px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 1001;
 }
 
 .stats-box {
@@ -145,6 +202,30 @@ form[action*="end-giveaway"] button {
 
 form[action*="reroll-giveaway"] button {
   background-color: #00ccff;
+}
+
+/* Responsive layout for mobile devices */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: relative;
+    right: 0;
+    top: 0;
+    bottom: auto;
+    width: 100%;
+    height: auto;
+    border-left: none;
+    border-top: 4px solid var(--primary-color);
+    padding: 20px;
+  }
+
+  .main {
+    margin-right: 0;
+    padding: 20px;
+  }
 }
 
 ul {
