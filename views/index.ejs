@@ -256,6 +256,9 @@
   <!-- טעינת ספריית Chart.js מה‑CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- טעינת לקוח Socket.io כדי להתחבר לשרת בזמן אמת -->
+  <script src="/socket.io/socket.io.js"></script>
+
   <!-- Toggle theme and language script -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -284,6 +287,37 @@
           window.location.href = url.toString();
         });
       }
+    });
+  </script>
+
+  <!-- Socket.io real-time updates -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const socket = io();
+      // קבל עדכון סטטיסטיקות ושדרג את התצוגה והגרף
+      socket.on('stats', stats => {
+        // עדכן את הערכים בכרטיסייה
+        const statsElements = document.querySelectorAll('#stats .stat strong');
+        if (statsElements.length >= 3) {
+          statsElements[0].textContent = stats.users;
+          statsElements[1].textContent = stats.channels;
+          statsElements[2].textContent = stats.roles;
+        }
+        // עדכן את הגרף אם קיים
+        if (window.statsChart) {
+          window.statsChart.data.datasets[0].data = [stats.users, stats.channels, stats.roles];
+          window.statsChart.update();
+        }
+      });
+      // קבל עדכון הזמנות ושדרג את רשימת ההזמנות
+      socket.on('invites', invites => {
+        const list = document.getElementById('invitesList');
+        if (!list) return;
+        list.innerHTML = invites.length === 0 ? "<li><%= lang === 'en' ? 'No invite data available.' : 'אין נתוני הזמנות זמינים.' %></li>" : "";
+        invites.forEach(i => {
+          list.innerHTML += `<li><strong>${i.username}</strong> הזמין ${i.count} משתמשים</li>`;
+        });
+      });
     });
   </script>
 </body>
