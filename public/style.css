@@ -268,7 +268,7 @@ form[action*="reroll-giveaway"] button {
 
   /* On larger screens, show a vertical accent line on the sidebar */
   .sidebar {
-    border-left: 4px solid var(--primary-color);
+         border-left: none;
   }
 }
 
