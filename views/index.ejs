@@ -31,6 +31,8 @@
 <body>
   <!-- Top bar with language and theme toggles -->
   <header class="topbar">
+    <!-- Hamburger menu toggle for mobile -->
+    <button id="menuToggle">☰</button>
     <button id="langToggle"><%= lang === 'en' ? 'עברית' : 'English' %></button>
     <button id="themeToggle"><%= lang === 'en' ? 'Dark/Light' : 'בהיר/כהה' %></button>
   </header>
@@ -264,6 +266,8 @@
     document.addEventListener('DOMContentLoaded', () => {
       const themeToggle = document.getElementById('themeToggle');
       const langToggle = document.getElementById('langToggle');
+      const menuToggleBtn = document.getElementById('menuToggle');
+      const sidebarEl = document.querySelector('.sidebar');
       const root = document.documentElement;
       // Restore saved theme preference or default to dark
       const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -285,6 +289,13 @@
           const url = new URL(window.location.href);
           url.searchParams.set('lang', newLang);
           window.location.href = url.toString();
+        });
+      }
+
+      // Toggle sidebar visibility on mobile when hamburger is clicked
+      if (menuToggleBtn && sidebarEl) {
+        menuToggleBtn.addEventListener('click', () => {
+          sidebarEl.classList.toggle('open');
         });
       }
     });
@@ -316,6 +327,45 @@
         list.innerHTML = invites.length === 0 ? "<li><%= lang === 'en' ? 'No invite data available.' : 'אין נתוני הזמנות זמינים.' %></li>" : "";
         invites.forEach(i => {
           list.innerHTML += `<li><strong>${i.username}</strong> הזמין ${i.count} משתמשים</li>`;
+        });
+      });
+
+      // קבל עדכוני הגרלות ושדרג את רשימת ההגרלות הפעילות והסתיימו
+      socket.on('giveaways', data => {
+        const active = data.active || [];
+        const ended = data.ended || [];
+        const activeList = document.getElementById('activeGiveawaysList');
+        const endedList = document.getElementById('endedGiveawaysList');
+        if (!activeList || !endedList) return;
+        // נקה תוכן קודם
+        activeList.innerHTML = active.length === 0 ? `<li><%= lang === 'en' ? 'No active giveaways.' : 'אין כרגע הגרלות פעילות.' %></li>` : '';
+        endedList.innerHTML = ended.length === 0 ? `<li><%= lang === 'en' ? 'No giveaways have ended yet.' : 'אין עדיין הגרלות שהסתיימו.' %></li>` : '';
+        // עבור כל הגרלה פעילה, הוסף לרשימה כפריט HTML
+        active.forEach(g => {
+          activeList.innerHTML += `
+            <li>
+              <strong>🎁 ${g.prize}</strong> | זכים: ${g.winnerCount} | מסתיימת: ${new Date(g.endAt).toLocaleString('he-IL')}
+              <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
+                <button class="button small reroll">🎲 רירול</button>
+              </form>
+              <form method="POST" action="/end-giveaway/${g.messageId}" style="display:inline;">
+                <button class="button small end">⛔ סיום</button>
+              </form>
+            </li>`;
+        });
+        // עבור הגרלות שהסתיימו, הוסף לרשימה כולל כפתורי רירול ומחיקה
+        ended.forEach(g => {
+          endedList.innerHTML += `
+            <li>
+              <strong>🎁 ${g.prize}</strong> | זכים: ${g.winnerCount} | הסתיימה: ${new Date(g.endAt).toLocaleString('he-IL')}
+              <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
+                <button class="button small reroll">🎲 רירול</button>
+              </form>
+              <form method="POST" action="/delete-giveaway" style="display:inline;">
+                <input type="hidden" name="giveawayId" value="${g.messageId}">
+                <button class="button small delete">🗑️ מחק</button>
+              </form>
+            </li>`;
         });
       });
     });
