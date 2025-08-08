@@ -68,7 +68,8 @@ client.user.setPresence({
 });
 
 client.on("guildMemberAdd", async member => {
-  const roleName = "👤 | Member";
+  // השתמש בשם הרול מתוך הקונפיג במקום מחרוזת קשיחה
+  const roleName = config.autoRoleName;
   const role = member.guild.roles.cache.find(r => r.name === roleName);
   if (role) {
     try {
@@ -111,7 +112,10 @@ if (lastOpened && now - lastOpened < 5 * 60 * 1000) {
 
     userTickets.set(member.id, now);
 
-    const category = guild.channels.cache.find(c => c.name === "📨〢Support" && c.type === ChannelType.GuildCategory);
+    // חיפוש הקטגוריה לפתיחת טיקטים לפי שם בקובץ הקונפיג
+    const category = guild.channels.cache.find(
+      c => c.name === config.ticketCategoryName && c.type === ChannelType.GuildCategory
+    );
     const channelName = `❎│${member.user.username}`;
 
     const ticketChannel = await guild.channels.create({
@@ -174,7 +178,8 @@ if (interaction.customId === "close_ticket") {
 
     await interaction.channel.send(`🔒 הטיקט נסגר על ידי ${interaction.user} | סיבה: ${reason}`);
 
-    let closedCategoryName = "טיקטים סגורים";
+    // קרא שם קטגוריה סגורה מתוך קובץ קונפיג, עם אפשרות לעקיפה באמצעות closedCategory.txt
+    let closedCategoryName = config.closedTicketsCategoryName;
     try {
       const filePath = path.join(__dirname, "closedCategory.txt");
       if (fs.existsSync(filePath)) {
@@ -241,8 +246,10 @@ client.on("messageCreate", async message => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("🌐 לוח הבקרה זמין בכתובת http://localhost:3000");
+// קבע פורט דינמי דרך משתנה סביבה או באמצעות הגדרה בקובץ הקונפיג
+const PORT = process.env.PORT || config.port || 3000;
+app.listen(PORT, () => {
+  console.log(`🌐 לוח הבקרה זמין בכתובת http://localhost:${PORT}`);
 });
 
 client.login(process.env.TOKEN);

@@ -1,0 +1,182 @@
+/*
+ * הגדרות עיצוב בסיסיות ונגישות.
+ * משתמשות במשתני CSS כדי לאפשר התאמה קלה של צבעים ונראות.
+ */
+:root {
+  --bg-color: #0e0e0e;
+  --text-color: #f1f1f1;
+  --primary-color: #44ff44;
+  --card-bg: #1a1a1a;
+  --sidebar-bg: #141414;
+  --input-bg: #2a2a2a;
+  --input-border: #444;
+  --button-bg: #44ff44;
+  --button-hover-bg: #ffffff;
+  --button-hover-color: #44ff44;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  direction: rtl;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  display: flex;
+  min-height: 100vh;
+}
+
+section {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+section.show {
+  display: block;
+  opacity: 1;
+}
+
+.sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 220px;
+  background-color: var(--sidebar-bg);
+  padding: 30px 20px;
+  box-shadow: 0 0 15px #111;
+  border-left: 4px solid var(--primary-color);
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.sidebar h2 {
+  font-size: 22px;
+  color: var(--primary-color);
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 14px;
+}
+
+.sidebar ul li a {
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.sidebar ul li a:hover {
+  color: var(--primary-color);
+}
+
+.main {
+  margin-right: 250px;
+  padding: 30px;
+  flex-grow: 1;
+}
+
+.dashboard-card {
+  background-color: var(--card-bg);
+  padding: 25px;
+  border-radius: 16px;
+  margin-bottom: 25px;
+  box-shadow: 0 0 15px rgba(54, 255, 71, 0.15);
+}
+
+.dashboard-card h2 {
+  color: var(--primary-color);
+  text-shadow: 0 0 5px var(--primary-color), 0 0 10px var(--primary-color);
+  margin-bottom: 15px;
+}
+
+input, button {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 5px 0;
+  font-size: 14px;
+  transition: 0.3s ease;
+}
+
+button {
+  background-color: var(--button-bg);
+  color: #000;
+  font-weight: bold;
+  box-shadow: 0 0 10px var(--button-bg);
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--button-hover-bg);
+  color: var(--button-hover-color);
+}
+
+.stats-box {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.stat {
+  background-color: #111;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 0 5px #333;
+  text-align: center;
+  flex: 1;
+  min-width: 100px;
+}
+
+.stat strong {
+  display: block;
+  font-size: 24px;
+  color: #44ff44;
+}
+
+form[action*="delete-giveaway"] button {
+  background-color: #ff4444;
+  color: #fff;
+}
+
+form[action*="end-giveaway"] button {
+  background-color: #ffaa00;
+}
+
+form[action*="reroll-giveaway"] button {
+  background-color: #00ccff;
+}
+
+ul {
+  padding-right: 20px;
+}
+
+.giveaway-item {
+  background: #141414;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  box-shadow: 0 0 8px #222;
+}
+
+.giveaway-item form {
+  display: inline-block;
+  margin-right: 8px;
+}

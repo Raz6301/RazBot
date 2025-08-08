@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="<%= lang %>" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title><%= t.loginTitle %></title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    /* סגנון מינימלי לעמוד התחברות */
+    .login-container {
+      max-width: 400px;
+      margin: 100px auto;
+      background-color: var(--card-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    .login-container h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--primary-color);
+    }
+    .login-container form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .error {
+      color: #ff5555;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1><%= t.loginTitle %></h1>
+    <% if (error) { %>
+      <div class="error"><%= t.errorMessage %></div>
+    <% } %>
+    <form method="POST" action="/login?lang=<%= lang %>">
+      <input type="password" name="password" placeholder="<%= t.passwordPlaceholder %>">
+      <button type="submit"><%= t.loginButton %></button>
+    </form>
+  </div>
+</body>
+</html>
