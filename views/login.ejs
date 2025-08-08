@@ -32,6 +32,12 @@
   </style>
 </head>
 <body>
+  <!-- Top bar with language and theme toggles on login page -->
+  <header class="topbar">
+    <button id="langToggle"><%= lang === 'en' ? 'עברית' : 'English' %></button>
+    <button id="themeToggle"><%= lang === 'en' ? 'Dark/Light' : 'בהיר/כהה' %></button>
+  </header>
+
   <div class="login-container">
     <h1><%= t.loginTitle %></h1>
     <% if (error) { %>
@@ -42,5 +48,33 @@
       <button type="submit"><%= t.loginButton %></button>
     </form>
   </div>
+
+  <!-- Theme and language toggle script for login page -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const themeToggle = document.getElementById('themeToggle');
+      const langToggle = document.getElementById('langToggle');
+      const root = document.documentElement;
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      root.setAttribute('data-theme', savedTheme);
+      if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+          const current = root.getAttribute('data-theme') || 'dark';
+          const newTheme = current === 'dark' ? 'light' : 'dark';
+          root.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+        });
+      }
+      if (langToggle) {
+        langToggle.addEventListener('click', () => {
+          const currentLang = '<%= lang %>';
+          const newLang = currentLang === 'en' ? 'he' : 'en';
+          const url = new URL(window.location.href);
+          url.searchParams.set('lang', newLang);
+          window.location.href = url.toString();
+        });
+      }
+    });
+  </script>
 </body>
 </html>
