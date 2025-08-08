@@ -7,7 +7,13 @@ const trackInvites = require("./invites");
 const fs = require("fs");
 const path = require("path");
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const app = express();
+
+// ניצור שרת HTTP נפרד עבור Express ונחבר את Socket.io
+const server = http.createServer(app);
+const io = new Server(server);
 
 const client = new Client({
   intents: [
@@ -47,8 +53,9 @@ client.user.setPresence({
 });
   }, 60000);
 
-  setupDashboard(client, guild, app);
-  trackInvites(client);
+setupDashboard(client, guild, app);
+// העבר את אובייקט Socket.io למעקב ההזמנות כדי שנוכל לשדר עדכונים בזמן אמת
+trackInvites(client, io);
 
   const ticketDir = path.join(__dirname, 'tickets');
   if (fs.existsSync(ticketDir)) {
@@ -248,7 +255,53 @@ client.on("messageCreate", async message => {
 
 // קבע פורט דינמי דרך משתנה סביבה או באמצעות הגדרה בקובץ הקונפיג
 const PORT = process.env.PORT || config.port || 3000;
-app.listen(PORT, () => {
+// שלח עדכוני סטטיסטיקות ללקוחות מחוברים כל 10 שניות
+setInterval(() => {
+  const guildInstance = client.guilds.cache.first();
+  if (!guildInstance) return;
+  const stats = {
+    users: guildInstance.memberCount,
+    channels: guildInstance.channels.cache.size,
+    roles: guildInstance.roles.cache.size
+  };
+  io.emit('stats', stats);
+}, 10000);
+
+// האזן לחיבורי Socket.io ושלח נתונים ראשוניים ללקוח
+io.on('connection', async socket => {
+  const guildInstance = client.guilds.cache.first();
+  if (guildInstance) {
+    const stats = {
+      users: guildInstance.memberCount,
+      channels: guildInstance.channels.cache.size,
+      roles: guildInstance.roles.cache.size
+    };
+    socket.emit('stats', stats);
+  }
+  // שליחת נתוני הזמנות ראשוניים
+  try {
+    const invitesData = require('./invites.json');
+    const formatted = await Promise.all(
+      Object.entries(invitesData).map(async ([userId, data]) => {
+        let username = 'Unknown';
+        try {
+          const user = await client.users.fetch(userId);
+          if (user) username = user.tag;
+        } catch {}
+        return {
+          userId,
+          username,
+          count: data.count,
+          invited: data.invited || []
+        };
+      })
+    );
+    socket.emit('invites', formatted);
+  } catch {}
+});
+
+// הפעל את השרת המשלב Express ו-Socket.io
+server.listen(PORT, () => {
   console.log(`🌐 לוח הבקרה זמין בכתובת http://localhost:${PORT}`);
 });
 

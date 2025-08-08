@@ -13,7 +13,7 @@ function loadInvites() {
   return JSON.parse(fs.readFileSync(invitesFile));
 }
 
-module.exports = function trackInvites(client) {
+module.exports = function trackInvites(client, io) {
   const invitesCache = new Map();
 
   client.on("ready", async () => {
@@ -55,6 +55,27 @@ module.exports = function trackInvites(client) {
     data[inviterId].dates[today]++;
 
     saveInvites(data);
+    // שליחת עדכון לרשימת ההזמנות בזמן אמת דרך Socket.io
+    if (io) {
+      try {
+        const formatted = await Promise.all(
+          Object.entries(data).map(async ([userId, entry]) => {
+            let username = 'Unknown';
+            try {
+              const user = await client.users.fetch(userId);
+              if (user) username = user.tag;
+            } catch {}
+            return {
+              userId,
+              username,
+              count: entry.count,
+              invited: entry.invited || []
+            };
+          })
+        );
+        io.emit('invites', formatted);
+      } catch {}
+    }
 
     console.log(`📨 ${member.user.tag} הוזמן על ידי ${usedInvite.inviter.tag}`);
   });
