@@ -30,6 +30,7 @@
 :root[data-theme="light"] {
   --bg-color: #f8f8f8;
   --text-color: #121212;
+ 
   --primary-color: #0066ff;
   --card-bg: #ffffff;
   --sidebar-bg: #f0f0f0;
@@ -62,7 +63,8 @@ body {
 section {
   display: none;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  t
+    ransition: opacity 0.3s ease;
 }
 
 section.show {
@@ -244,4 +246,61 @@ ul {
 .giveaway-item form {
   display: inline-block;
   margin-right: 8px;
+}
+
+/* Improved mobile sidebar and toggle */
+@media (max-width: 992px) {
+  .container {
+    flex-direction: column;
+  }
+  /* Sidebar becomes an off‑canvas panel on small screens */
+  .sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 220px;
+    height: 100%;
+    background-color: var(--sidebar-bg);
+    box-shadow: 0 0 15px #111;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    padding: 30px 20px;
+    z-index: 1002;
+    overflow-y: auto;
+  }
+  /* When sidebar has the .open class it slides into view */
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  /* Main content takes full width on mobile */
+  .main {
+    margin-right: 0;
+    padding: 20px;
+  }
+  /* Show the hamburger menu toggle */
+  #menuToggle {
+    display: block;
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 24px;
+    z-index: 1003;
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--button-bg);
+  }
+}
+/* Hide the hamburger toggle on larger screens */
+@media (min-width: 993px) {
+  #menuToggle {
+    display: none;
+  }
 }
