@@ -23,6 +23,17 @@
   --button-text: #000000;
   --button-hover-bg: #ffffff;
   --button-hover-color: #44ff44;
+
+  /* Override the default dark theme palette below with a softer accent
+     colour and refined neutrals for a more professional look.  Variables
+     defined later in the :root scope take precedence. */
+  --primary-color: #5eea5a;
+  --card-bg: #181818;
+  --sidebar-bg: #161616;
+  --button-bg: var(--primary-color);
+  --button-text: #0a0a0a;
+  --button-hover-bg: #7ffb7b;
+  --button-hover-color: #0a0a0a;
 }
 
 /* Light theme variables override the default dark values when
@@ -122,6 +133,10 @@ section.show {
   padding: 25px;
   border-radius: 16px;
   margin-bottom: 25px;
+  /* Add a subtle border and shadow using the primary colour to lift the
+     card off the page and tie it into the overall colour palette. */
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 15px rgba(94, 234, 90, 0.25);
   box-shadow: 0 0 15px rgba(54, 255, 71, 0.15);
 }
 
@@ -177,19 +192,23 @@ button:hover {
 }
 
 .stat {
-  background-color: #111;
-  padding: 15px;
-  border-radius: 10px;
-  box-shadow: 0 0 5px #333;
+  /* Stats cards adopt the card background and primary colour
+     accents for a cohesive appearance. */
+  background-color: var(--card-bg);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 12px rgba(94, 234, 90, 0.25);
   text-align: center;
   flex: 1;
-  min-width: 100px;
+  min-width: 120px;
 }
 
 .stat strong {
   display: block;
   font-size: 24px;
-  color: #44ff44;
+  /* Use the primary accent colour for the statistic values */
+  color: var(--primary-color);
 }
 
 form[action*="delete-giveaway"] button {
@@ -262,13 +281,14 @@ form[action*="reroll-giveaway"] button {
 
 /* Hide the hamburger toggle on larger screens */
 @media (min-width: 993px) {
+  /* On larger screens the sidebar is always visible, so hide the toggle */
   #menuToggle {
     display: none;
   }
 
-  /* On larger screens, show a vertical accent line on the sidebar */
+  /* Remove the vertical accent line on the sidebar for a cleaner look */
   .sidebar {
-         border-left: none;
+    border-left: none;
   }
 }
 
