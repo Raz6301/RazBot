@@ -255,20 +255,31 @@ client.on("messageCreate", async message => {
 
 // קבע פורט דינמי דרך משתנה סביבה או באמצעות הגדרה בקובץ הקונפיג
 const PORT = process.env.PORT || config.port || 3000;
-// שלח עדכוני סטטיסטיקות ללקוחות מחוברים כל 10 שניות
-setInterval(() => {
+// שלח עדכוני סטטיסטיקות והגרלות ללקוחות מחוברים כל 10 שניות
+setInterval(async () => {
   const guildInstance = client.guilds.cache.first();
-  if (!guildInstance) return;
-  const stats = {
-    users: guildInstance.memberCount,
-    channels: guildInstance.channels.cache.size,
-    roles: guildInstance.roles.cache.size
-  };
-  io.emit('stats', stats);
+  if (guildInstance) {
+    const stats = {
+      users: guildInstance.memberCount,
+      channels: guildInstance.channels.cache.size,
+      roles: guildInstance.roles.cache.size
+    };
+    io.emit('stats', stats);
+  }
+  // שלח גם עדכוני הגרלות בזמן אמת
+  try {
+    const allGiveaways = await client.giveawaysManager.getAllGiveaways();
+    const activeGiveaways = allGiveaways.filter(g => !g.ended);
+    const endedGiveaways = allGiveaways.filter(g => g.ended);
+    io.emit('giveaways', { active: activeGiveaways, ended: endedGiveaways });
+  } catch (err) {
+    console.warn('⚠️ שגיאה בשליחת עדכוני הגרלות:', err);
+  }
 }, 10000);
 
 // האזן לחיבורי Socket.io ושלח נתונים ראשוניים ללקוח
 io.on('connection', async socket => {
+  // שלח נתוני סטטיסטיקות ראשוניים
   const guildInstance = client.guilds.cache.first();
   if (guildInstance) {
     const stats = {
@@ -277,6 +288,15 @@ io.on('connection', async socket => {
       roles: guildInstance.roles.cache.size
     };
     socket.emit('stats', stats);
+  }
+  // שלח נתוני הגרלות ראשוניים
+  try {
+    const allGiveaways = await client.giveawaysManager.getAllGiveaways();
+    const activeGiveaways = allGiveaways.filter(g => !g.ended);
+    const endedGiveaways = allGiveaways.filter(g => g.ended);
+    socket.emit('giveaways', { active: activeGiveaways, ended: endedGiveaways });
+  } catch (err) {
+    console.warn('⚠️ שגיאה בקריאת נתוני הגרלות:', err);
   }
   // שליחת נתוני הזמנות ראשוניים
   try {
@@ -297,7 +317,9 @@ io.on('connection', async socket => {
       })
     );
     socket.emit('invites', formatted);
-  } catch {}
+  } catch (err) {
+    console.warn('⚠️ שגיאה בשליחת הזמנות:', err);
+  }
 });
 
 // הפעל את השרת המשלב Express ו-Socket.io
