@@ -104,14 +104,9 @@
     "בהמיות",
     "קקי"
   ],
-  "autoRole": "123456789012345678"
-  ,
-  // שם הרול שמתווסף אוטומטית למשתמש חדש
+  "autoRole": "123456789012345678",
   "autoRoleName": "👤 | Member",
-  // שם הקטגוריה לטיקטים פתוחים
   "ticketCategoryName": "📨〢Support",
-  // שם ברירת המחדל לקטגוריית הטיקטים הסגורים
   "closedTicketsCategoryName": "טיקטים סגורים",
-  // פורט ה־HTTP להפעלת לוח הבקרה (אפשר לשנות דרך משתנה סביבה PORT)
   "port": 3000
 }
