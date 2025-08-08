@@ -35,6 +35,25 @@ client.giveawaysManager = new GiveawaysManager(client, {
   }
 });
 
+// --- Real‑time giveaways broadcasting ---
+// Define a helper function to collect current giveaways and broadcast to all connected clients.
+async function broadcastGiveaways() {
+  try {
+    const all = await client.giveawaysManager.getAllGiveaways();
+    const active = all.filter(g => !g.ended);
+    const ended = all.filter(g => g.ended);
+    io.emit('giveaways', { active, ended });
+  } catch (err) {
+    console.warn('⚠️ שגיאה בשידור עדכון הגרלות:', err);
+  }
+}
+
+// Listen for all relevant giveaway lifecycle events and broadcast updates immediately.
+['giveawayStarted', 'giveawayEnded', 'giveawayDeleted', 'giveawayRerolled', 'giveawayPaused', 'giveawayUnpaused', 'giveawayEdited']
+  .forEach(evt => {
+    client.giveawaysManager.on(evt, broadcastGiveaways);
+  });
+
 const ticketLogs = new Map();
 const userTickets = new Map();
 
