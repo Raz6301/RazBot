@@ -67,7 +67,7 @@ body {
 
 .container {
   display: flex;
-  min-height: 20vh;
+  min-height: 70vh;
 }
 
 section {
@@ -127,7 +127,7 @@ section.show {
   padding: 30px;
   flex-grow: 1;
   /* Provide space for the sticky topbar so the first card is not hidden */
-  margin-top: 70px;
+  margin-top: 30px;
 }
 
 .dashboard-card {
