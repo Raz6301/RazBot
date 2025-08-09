@@ -43,9 +43,8 @@
       <ul>
         <li><a href="#stats"> <%= t.menu.stats %> </a></li>
         <li><a href="#giveaways"> <%= t.menu.giveaways %> </a></li>
-        <li><a href="#messages"> <%= t.menu.messages %> </a></li>
         <li><a href="#filters"> <%= t.menu.filters %> </a></li>
-        <li><a href="#ticket"> <%= t.menu.ticket %> </a></li>
+        <li><a href="#tickets"> <%= t.menu.tickets %> </a></li>
         <li><a href="#invites"> <%= t.menu.invites %> </a></li>
       </ul>
     </aside>
@@ -82,12 +81,7 @@
         <ul id="endedGiveawaysList"><li>טוען...</li></ul>
       </section>
 
-      <section id="messages" class="dashboard-card">
-        <h2><%= t.sections.messagesTitle %></h2>
-        <p>📥 ברוך הבא: <%= messages.welcome %></p>
-        <p>🔗 הזמנה: <%= messages.invite %></p>
-        <p>⚠️ שגיאה: <%= messages.error %></p>
-      </section>
+      <!-- Removed messages section -->
 
       <section id="filters" class="dashboard-card">
         <h2><%= t.sections.filtersTitle %></h2>
@@ -103,14 +97,17 @@
         </form>
       </section>
 
-      <section id="ticket" class="dashboard-card">
-        <h2><%= t.sections.ticketTitle %></h2>
-   <form method="POST" action="/send-ticket-button?lang=<%= lang %>">
-  <input type="text" name="ticketChannel" placeholder="<%= lang === 'en' ? 'Channel name' : 'שם החדר' %>">
-  <input type="text" name="ticketMessage" placeholder="<%= lang === 'en' ? 'Message text' : 'תוכן ההודעה' %>">
-  <input type="text" name="closedCategory" placeholder="<%= lang === 'en' ? 'Closed tickets category name' : 'שם הקטגוריה לטיקטים סגורים' %>">
-  <button type="submit"><%= t.actions.sendTicket %></button>
-</form>
+      <section id="tickets" class="dashboard-card">
+        <h2><%= t.sections.ticketsTitle %></h2>
+        <!-- Form to create a ticket button -->
+        <form method="POST" action="/send-ticket-button?lang=<%= lang %>">
+          <input type="text" name="ticketChannel" placeholder="<%= lang === 'en' ? 'Channel name' : 'שם החדר' %>">
+          <input type="text" name="ticketMessage" placeholder="<%= lang === 'en' ? 'Message text' : 'תוכן ההודעה' %>">
+          <input type="text" name="closedCategory" placeholder="<%= lang === 'en' ? 'Closed tickets category name' : 'שם הקטגוריה לטיקטים סגורים' %>">
+          <button type="submit"><%= t.actions.sendTicket %></button>
+        </form>
+        <h3><%= lang === 'en' ? 'Closed tickets' : 'טיקטים סגורים' %></h3>
+        <ul id="ticketsList"><li><%= lang === 'en' ? 'Loading tickets...' : 'טוען טיקטים...' %></li></ul>
       </section>
 
       <section id="invites" class="dashboard-card">
@@ -118,6 +115,14 @@
         <ul id="invitesList"><li><%= lang === 'en' ? 'Loading...' : 'טוען...' %></li></ul>
       </section>
     </main>
+  </div>
+
+  <!-- Modal for displaying closed ticket messages -->
+  <div id="ticketModal" style="display:none; position:fixed; top:0; right:0; bottom:0; left:0; background: rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:2000;">
+    <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; max-width: 80%; max-height: 80%; overflow-y: auto; color: var(--text-color); position: relative;">
+      <button id="closeTicketModal" style="position:absolute; top:10px; left:10px; background:none; border:none; color: var(--text-color); font-size:24px; cursor:pointer;">×</button>
+      <pre id="ticketContent" style="white-space: pre-wrap;"></pre>
+    </div>
   </div>
 
   <script>
@@ -134,21 +139,20 @@
         activeList.innerHTML = active.length === 0 ? "<li>אין כרגע הגרלות פעילות.</li>" : "";
         endedList.innerHTML = ended.length === 0 ? "<li>אין עדיין הגרלות שהסתיימו.</li>" : "";
         active.forEach(g => {
-          activeList.innerHTML += `<li><strong>🎁 ${g.prize}</strong> | זכים: ${g.winnerCount} | מסתיימת: ${new Date(g.endAt).toLocaleString("he-IL")}
+          activeList.innerHTML += `<li><strong>🎁 ${g.prize}</strong> | זוכים: ${g.winnerCount} | מסתיימת: ${new Date(g.endAt).toLocaleString("he-IL")}
     <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
-<button class="button small reroll">🎲 רירול</button>
-</form>
-
-<form method="POST" action="/end-giveaway/${g.messageId}" style="display:inline;">
-<button class="button small end">⛔ סיום</button>
-</form>
-
+      <button class="button small reroll">🎲 רירול</button>
+    </form>
+    <form method="POST" action="/end-giveaway/${g.messageId}" style="display:inline;">
+      <button class="button small end">⛔ סיום</button>
+    </form>
+    <button type="button" class="button small extend" data-id="${g.messageId}">⌛ הארך</button>
           </li>`;
         });
       ended.forEach(g => {
   endedList.innerHTML += `
     <li>
-      <strong>🎁 ${g.prize}</strong> | זכים: ${g.winnerCount} | הסתיימה: ${new Date(g.endAt).toLocaleString("he-IL")}
+      <strong>🎁 ${g.prize}</strong> | זוכים: ${g.winnerCount} | הסתיימה: ${new Date(g.endAt).toLocaleString("he-IL")}
       <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
         <button class="button small reroll">🎲 רירול</button>
       </form>
@@ -178,6 +182,33 @@
       }
     }
 
+    async function fetchTickets() {
+      try {
+        const res = await fetch('/api/tickets');
+        const tickets = await res.json();
+        const list = document.getElementById('ticketsList');
+        if (!list) return;
+        list.innerHTML = tickets.length === 0
+          ? `<li><%= lang === 'en' ? 'No closed tickets.' : 'אין טיקטים סגורים.' %></li>`
+          : '';
+        tickets.forEach(t => {
+          // encode messages for dataset to avoid HTML issues
+          const encoded = encodeURIComponent(t.messages);
+          list.innerHTML += `<li><button type="button" class="ticket-item" data-msg="${encoded}">${t.user} - ${t.channel}</button></li>`;
+        });
+        document.querySelectorAll('.ticket-item').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const decoded = decodeURIComponent(btn.getAttribute('data-msg'));
+            const modal = document.getElementById('ticketModal');
+            const content = document.getElementById('ticketContent');
+            content.textContent = decoded;
+            modal.style.display = 'flex';
+          });
+        });
+      } catch (err) {
+        console.error('שגיאה בטעינת טיקטים:', err);
+      }
+    }
     document.addEventListener("DOMContentLoaded", () => {
       const links = document.querySelectorAll(".sidebar a");
       const saved = localStorage.getItem("lastSection") || "stats";
@@ -189,6 +220,7 @@
       fetchGiveaways();
       fetchInvites();
       fetchStatsChart();
+      fetchTickets();
     });
 
     function showSection(id) {
@@ -298,6 +330,45 @@
           sidebarEl.classList.toggle('open');
         });
       }
+
+      // Close ticket modal on close button click
+      const closeTicketModalBtn = document.getElementById('closeTicketModal');
+      const ticketModal = document.getElementById('ticketModal');
+      if (closeTicketModalBtn && ticketModal) {
+        closeTicketModalBtn.addEventListener('click', () => {
+          ticketModal.style.display = 'none';
+        });
+      }
+
+      // Hide modal when clicking on the overlay itself (outside modal content)
+      if (ticketModal) {
+        ticketModal.addEventListener('click', ev => {
+          if (ev.target === ticketModal) {
+            ticketModal.style.display = 'none';
+          }
+        });
+      }
+
+      // Handle extend giveaway buttons globally
+      document.addEventListener('click', async function(ev) {
+        const target = ev.target;
+        if (target.classList.contains('extend')) {
+          const id = target.getAttribute('data-id');
+          // Ask user for additional time to extend
+          const promptMsg = '<%= lang === "en" ? "Enter additional time (e.g., 10m, 1h, 1d):" : "הזן זמן נוסף (למשל 10m, 1h, 1d):" %>';
+          const additional = prompt(promptMsg);
+          if (!additional) return;
+          const formData = new FormData();
+          formData.append('time', additional);
+          const resp = await fetch(`/extend-giveaway/${id}`, { method: 'POST', body: formData });
+          if (resp.ok) {
+            alert('<%= lang === "en" ? "Giveaway extended" : "ההגרלה הוארכה" %>');
+            fetchGiveaways();
+          } else {
+            alert('<%= lang === "en" ? "Failed to extend giveaway" : "כשל בהארכת ההגרלה" %>');
+          }
+        }
+      });
     });
   </script>
 
@@ -344,20 +415,22 @@
         active.forEach(g => {
           activeList.innerHTML += `
             <li>
-              <strong>🎁 ${g.prize}</strong> | זכים: ${g.winnerCount} | מסתיימת: ${new Date(g.endAt).toLocaleString('he-IL')}
+              <strong>🎁 ${g.prize}</strong> | זוכים: ${g.winnerCount} | מסתיימת: ${new Date(g.endAt).toLocaleString('he-IL')}
               <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
                 <button class="button small reroll">🎲 רירול</button>
               </form>
               <form method="POST" action="/end-giveaway/${g.messageId}" style="display:inline;">
                 <button class="button small end">⛔ סיום</button>
               </form>
+              <button type="button" class="button small extend" data-id="${g.messageId}">⌛ הארך</button>
             </li>`;
         });
         // עבור הגרלות שהסתיימו, הוסף לרשימה כולל כפתורי רירול ומחיקה
         ended.forEach(g => {
+          const winners = Array.isArray(g.winnerNames) && g.winnerNames.length > 0 ? g.winnerNames.join(', ') : g.winnerCount;
           endedList.innerHTML += `
             <li>
-              <strong>🎁 ${g.prize}</strong> | זכים: ${g.winnerCount} | הסתיימה: ${new Date(g.endAt).toLocaleString('he-IL')}
+              <strong>🎁 ${g.prize}</strong> | זוכים: ${winners} | הסתיימה: ${new Date(g.endAt).toLocaleString('he-IL')}
               <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
                 <button class="button small reroll">🎲 רירול</button>
               </form>
