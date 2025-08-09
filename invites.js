@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const invitesFile = path.join(__dirname, "invites.json");
+const config = require('./config.json');
 
 function saveInvites(data) {
   fs.writeFileSync(invitesFile, JSON.stringify(data, null, 2));
@@ -55,6 +56,21 @@ module.exports = function trackInvites(client, io) {
     data[inviterId].dates[today]++;
 
     saveInvites(data);
+    // If an invite log channel is configured, send a message about the join/ inviter details
+    try {
+      const channelId = config.inviteLogChannelId;
+      if (channelId) {
+        const channel = member.guild.channels.cache.get(channelId);
+        if (channel) {
+          const inviterTag = usedInvite.inviter ? usedInvite.inviter.tag : 'Unknown';
+          const inviterId = usedInvite.inviter ? usedInvite.inviter.id : null;
+          const totalInvites = data[inviterId]?.count || 0;
+          await channel.send(`📨 ${member.user.tag} הצטרף לשרת. המוזמן: ${inviterTag}, כמות ההזמנות הכוללת: ${totalInvites}`);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to send invite log message:', err);
+    }
     // שליחת עדכון לרשימת ההזמנות בזמן אמת דרך Socket.io
     if (io) {
       try {

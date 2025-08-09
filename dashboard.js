@@ -255,7 +255,16 @@ app.post("/send-ticket-button", async (req, res) => {
     if (!channel || !durationStr || !winnerCount || !prize) return res.redirect("/?lang=" + lang);
 
     const duration = ms(durationStr);
-  
+    const now = Date.now();
+    const endTime = new Date(now + duration);
+
+    const getHebrewDuration = (msValue) => {
+      const seconds = Math.floor(msValue / 1000);
+      if (seconds < 60) return `${seconds} שניות`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)} דקות`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)} שעות`;
+      return `${Math.floor(seconds / 86400)} ימים`;
+    };
 
     client.giveawaysManager.start(channel, {
       duration,
@@ -265,7 +274,7 @@ app.post("/send-ticket-button", async (req, res) => {
       messages: {
         giveaway: "🎉🎉 **הגרלה!** 🎉🎉",
         giveawayEnded: "🎉🎉 **ההגרלה הסתיימה** 🎉🎉",
-        drawing: `ההגרלה מסתיימת בעוד: `,
+        drawing: `ההגרלה מסתיימת בעוד: ${getHebrewDuration(duration)}`,
         inviteToParticipate: "הגב עם 🎉 כדי להשתתף!",
         winMessage: "🎉 מזל טוב {winners}, זכיתם ב**{this.prize}**!",
         embedFooter: "RazBot - הגרלות",
@@ -329,7 +338,9 @@ app.post("/send-ticket-button", async (req, res) => {
   // Extend the duration of an existing giveaway by adding extra time
   app.post("/extend-giveaway/:id", async (req, res) => {
     const id = req.params.id;
-    const additional = req.body.time?.trim();
+    // Allow receiving the additional time either from the request body (when form-encoded)
+    // or from a query parameter (when sent via fetch with a query string).
+    const additional = (req.body.time && req.body.time.trim()) || req.query.time;
     const lang = req.query.lang || 'he';
     // Validate time string
     if (!additional) return res.status(400).send("Missing time");

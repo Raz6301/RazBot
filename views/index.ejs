@@ -60,6 +60,12 @@
 
         <!-- תצוגת גרף סטטיסטיקות באמצעות Chart.js -->
         <canvas id="statsChart" width="400" height="200" style="margin-top: 20px;"></canvas>
+        <!-- תצוגת סטטיסטיקות נוספות -->
+        <div class="stats-box extra-stats" style="margin-top: 20px;">
+          <div class="stat"><strong><%= stats.humans %></strong> <%= lang === 'en' ? 'Members' : 'ממברים אמיתיים' %></div>
+          <div class="stat"><strong><%= stats.bots %></strong> <%= lang === 'en' ? 'Bots' : 'בוטים' %></div>
+          <div class="stat"><strong><%= stats.ageDays %></strong> <%= lang === 'en' ? 'days since server creation' : 'ימים מאז יצירת השרת' %></div>
+        </div>
       </section>
 
       <section id="giveaways" class="dashboard-card">
@@ -89,7 +95,7 @@
           <button type="submit"><%= lang === 'en' ? 'Links: ' : 'לינקים: ' %><%= config.blockLinks ? (lang === 'en' ? 'Enabled' : 'מופעל') : (lang === 'en' ? 'Disabled' : 'כבוי') %></button>
         </form>
         <form method="POST" action="/toggle-blockPings?lang=<%= lang %>">
-          <button type="submit"><%= lang === 'en' ? 'Pings: ' : 'פינגים: ' %><%= config.blockPings ? (lang === 'en' ? 'Enabled' : 'מופעל') : (lang === 'en' ? 'Disabled' : 'כבוי') %></button>
+          <button type="submit"><%= lang === 'en' ? 'Mentions: ' : 'תיוגים: ' %><%= config.blockPings ? (lang === 'en' ? 'Enabled' : 'מופעל') : (lang === 'en' ? 'Disabled' : 'כבוי') %></button>
         </form>
         <form method="POST" action="/add-badword?lang=<%= lang %>">
           <input type="text" name="word" placeholder="<%= lang === 'en' ? 'Add a forbidden word' : 'הוסף מילה אסורה' %>">
@@ -128,6 +134,20 @@
   <script>
     // טען את ספריית Chart.js
     // Note: Chart.js נטען באמצעות CDN בהמשך (ראו בהמשך).
+    // Helper function to format a duration in milliseconds into a human-readable string
+    const currentLang = '<%= lang %>';
+    function formatDuration(ms) {
+      const secs = Math.floor(ms / 1000);
+      const days = Math.floor(secs / 86400);
+      const hours = Math.floor((secs % 86400) / 3600);
+      const minutes = Math.floor((secs % 3600) / 60);
+      const parts = [];
+      if (days) parts.push(days + (currentLang === 'en' ? 'd' : ' י'));
+      if (hours) parts.push(hours + (currentLang === 'en' ? 'h' : ' ש'));
+      if (minutes) parts.push(minutes + (currentLang === 'en' ? 'm' : ' דק'));
+      return parts.join(' ') || (currentLang === 'en' ? '0m' : '0 דק');
+    }
+
     async function fetchGiveaways() {
       try {
         const res = await fetch("/api/giveaways");
@@ -139,7 +159,11 @@
         activeList.innerHTML = active.length === 0 ? "<li>אין כרגע הגרלות פעילות.</li>" : "";
         endedList.innerHTML = ended.length === 0 ? "<li>אין עדיין הגרלות שהסתיימו.</li>" : "";
         active.forEach(g => {
-          activeList.innerHTML += `<li><strong>🎁 ${g.prize}</strong> | זוכים: ${g.winnerCount} | מסתיימת: ${new Date(g.endAt).toLocaleString("he-IL")}
+          const winners = g.winnerCount > 0 ? g.winnerCount : (currentLang === 'en' ? 'Nobody participated.' : 'אף אחד לא השתתף.');
+          const timeStr = formatDuration(g.endAt - Date.now());
+          const winnerLabel = currentLang === 'en' ? 'Winners' : 'זוכים';
+          const timeLabel = currentLang === 'en' ? 'Ends in' : 'מסתיימת בעוד';
+          activeList.innerHTML += `<li><strong>🎁 ${g.prize}</strong> | ${winnerLabel}: ${winners} | ${timeLabel}: ${timeStr}
     <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
       <button class="button small reroll">🎲 רירול</button>
     </form>
@@ -150,9 +174,12 @@
           </li>`;
         });
       ended.forEach(g => {
+  const winnersDisplay = (Array.isArray(g.winnerNames) && g.winnerNames.length > 0)
+    ? g.winnerNames.join(', ')
+    : (g.winnerCount > 0 ? g.winnerCount : (currentLang === 'en' ? 'Nobody participated.' : 'אף אחד לא השתתף.'));
   endedList.innerHTML += `
     <li>
-      <strong>🎁 ${g.prize}</strong> | זוכים: ${g.winnerCount} | הסתיימה: ${new Date(g.endAt).toLocaleString("he-IL")}
+      <strong>🎁 ${g.prize}</strong> | ${currentLang === 'en' ? 'Winners' : 'זוכים'}: ${winnersDisplay} | ${currentLang === 'en' ? 'Ended' : 'הסתיימה'}: ${new Date(g.endAt).toLocaleString('he-IL')}
       <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
         <button class="button small reroll">🎲 רירול</button>
       </form>
@@ -221,6 +248,21 @@
       fetchInvites();
       fetchStatsChart();
       fetchTickets();
+
+      // Client-side validation for creating giveaways: ensure all fields are filled
+      const giveawayForm = document.querySelector('#giveaways form');
+      if (giveawayForm) {
+        giveawayForm.addEventListener('submit', ev => {
+          const channel = giveawayForm.giveawayChannel.value.trim();
+          const duration = giveawayForm.giveawayDuration.value.trim();
+          const winners = giveawayForm.giveawayWinners.value.trim();
+          const prize = giveawayForm.giveawayPrize.value.trim();
+          if (!channel || !duration || !winners || !prize) {
+            ev.preventDefault();
+            alert(currentLang === 'en' ? 'Please fill in all fields.' : 'נא למלא את כל השדות.');
+          }
+        });
+      }
     });
 
     function showSection(id) {
@@ -413,9 +455,13 @@
         endedList.innerHTML = ended.length === 0 ? `<li><%= lang === 'en' ? 'No giveaways have ended yet.' : 'אין עדיין הגרלות שהסתיימו.' %></li>` : '';
         // עבור כל הגרלה פעילה, הוסף לרשימה כפריט HTML
         active.forEach(g => {
+          const winners = g.winnerCount > 0 ? g.winnerCount : (currentLang === 'en' ? 'Nobody participated.' : 'אף אחד לא השתתף.');
+          const timeStr = formatDuration(g.endAt - Date.now());
+          const winnerLabel = currentLang === 'en' ? 'Winners' : 'זוכים';
+          const timeLabel = currentLang === 'en' ? 'Ends in' : 'מסתיימת בעוד';
           activeList.innerHTML += `
             <li>
-              <strong>🎁 ${g.prize}</strong> | זוכים: ${g.winnerCount} | מסתיימת: ${new Date(g.endAt).toLocaleString('he-IL')}
+              <strong>🎁 ${g.prize}</strong> | ${winnerLabel}: ${winners} | ${timeLabel}: ${timeStr}
               <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
                 <button class="button small reroll">🎲 רירול</button>
               </form>
@@ -427,10 +473,12 @@
         });
         // עבור הגרלות שהסתיימו, הוסף לרשימה כולל כפתורי רירול ומחיקה
         ended.forEach(g => {
-          const winners = Array.isArray(g.winnerNames) && g.winnerNames.length > 0 ? g.winnerNames.join(', ') : g.winnerCount;
+          const winners = Array.isArray(g.winnerNames) && g.winnerNames.length > 0
+            ? g.winnerNames.join(', ')
+            : (g.winnerCount > 0 ? g.winnerCount : (currentLang === 'en' ? 'Nobody participated.' : 'אף אחד לא השתתף.'));
           endedList.innerHTML += `
             <li>
-              <strong>🎁 ${g.prize}</strong> | זוכים: ${winners} | הסתיימה: ${new Date(g.endAt).toLocaleString('he-IL')}
+              <strong>🎁 ${g.prize}</strong> | ${currentLang === 'en' ? 'Winners' : 'זוכים'}: ${winners} | ${currentLang === 'en' ? 'Ended' : 'הסתיימה'}: ${new Date(g.endAt).toLocaleString('he-IL')}
               <form method="POST" action="/reroll-giveaway/${g.messageId}" style="display:inline;">
                 <button class="button small reroll">🎲 רירול</button>
               </form>

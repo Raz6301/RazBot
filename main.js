@@ -306,14 +306,28 @@ const PORT = process.env.PORT || config.port || 3000;
 // שלח עדכוני סטטיסטיקות והגרלות ללקוחות מחוברים כל 10 שניות
 setInterval(async () => {
   const guildInstance = client.guilds.cache.first();
-  if (guildInstance) {
-    const stats = {
-      users: guildInstance.memberCount,
-      channels: guildInstance.channels.cache.size,
-      roles: guildInstance.roles.cache.size
-    };
-    io.emit('stats', stats);
-  }
+    if (guildInstance) {
+      // Gather additional statistics: bots, human members and server age in days
+      let members;
+      try {
+        members = await guildInstance.members.fetch();
+      } catch {
+        members = guildInstance.members.cache;
+      }
+      const totalMembers = members.size;
+      const bots = members.filter(m => m.user.bot).size;
+      const humans = totalMembers - bots;
+      const ageDays = Math.floor((Date.now() - guildInstance.createdAt) / 86400000);
+      const stats = {
+        users: guildInstance.memberCount,
+        channels: guildInstance.channels.cache.size,
+        roles: guildInstance.roles.cache.size,
+        bots,
+        humans,
+        ageDays
+      };
+      io.emit('stats', stats);
+    }
   // שלח גם עדכוני הגרלות בזמן אמת (כולל שמות הזוכים)
   await broadcastGiveaways();
 }, 10000);
@@ -323,10 +337,24 @@ io.on('connection', async socket => {
   // שלח נתוני סטטיסטיקות ראשוניים
   const guildInstance = client.guilds.cache.first();
   if (guildInstance) {
+    // Gather additional statistics for initial emission
+    let members;
+    try {
+      members = await guildInstance.members.fetch();
+    } catch {
+      members = guildInstance.members.cache;
+    }
+    const totalMembers = members.size;
+    const bots = members.filter(m => m.user.bot).size;
+    const humans = totalMembers - bots;
+    const ageDays = Math.floor((Date.now() - guildInstance.createdAt) / 86400000);
     const stats = {
       users: guildInstance.memberCount,
       channels: guildInstance.channels.cache.size,
-      roles: guildInstance.roles.cache.size
+      roles: guildInstance.roles.cache.size,
+      bots,
+      humans,
+      ageDays
     };
     socket.emit('stats', stats);
   }

@@ -126,6 +126,8 @@ section.show {
   margin-right: 250px;
   padding: 30px;
   flex-grow: 1;
+  /* Provide space for the sticky topbar so the first card is not hidden */
+  margin-top: 70px;
 }
 
 .dashboard-card {
