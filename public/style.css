@@ -67,7 +67,7 @@ body {
 
 .container {
   display: flex;
-  min-height: 50vh;
+  min-height: 20vh;
 }
 
 section {
