@@ -37,12 +37,35 @@ client.giveawaysManager = new GiveawaysManager(client, {
 
 // --- Real‑time giveaways broadcasting ---
 // Define a helper function to collect current giveaways and broadcast to all connected clients.
+//
+// Helper to broadcast giveaway state to all connected clients. In addition
+// to sending the raw giveaway objects from discord‑giveaways, this helper
+// resolves the names of any winners for ended giveaways so the dashboard can
+// display them instead of just a count. If an error occurs while
+// fetching user details, the username will be omitted from the list.
 async function broadcastGiveaways() {
   try {
     const all = await client.giveawaysManager.getAllGiveaways();
     const active = all.filter(g => !g.ended);
     const ended = all.filter(g => g.ended);
-    io.emit('giveaways', { active, ended });
+    // For ended giveaways resolve the winner names using winnerIds from
+    // discord‑giveaways. When no IDs are available we return an empty list.
+    const endedWithNames = await Promise.all(ended.map(async g => {
+      let winnerNames = [];
+      if (Array.isArray(g.winnerIds) && g.winnerIds.length > 0) {
+        const names = await Promise.all(g.winnerIds.map(async id => {
+          try {
+            const user = await client.users.fetch(id);
+            return user ? user.username : null;
+          } catch {
+            return null;
+          }
+        }));
+        winnerNames = names.filter(Boolean);
+      }
+      return { ...g, winnerNames };
+    }));
+    io.emit('giveaways', { active, ended: endedWithNames });
   } catch (err) {
     console.warn('⚠️ שגיאה בשידור עדכון הגרלות:', err);
   }
@@ -73,6 +96,12 @@ client.user.setPresence({
   }, 60000);
 
 setupDashboard(client, guild, app);
+  // Setup ticket API routes (closed tickets)
+  try {
+    require('./tickets-api')(app);
+  } catch (err) {
+    console.warn('⚠️ לא ניתן לטעון ממשק API לטיקטים:', err);
+  }
 // העבר את אובייקט Socket.io למעקב ההזמנות כדי שנוכל לשדר עדכונים בזמן אמת
 trackInvites(client, io);
 
@@ -285,15 +314,8 @@ setInterval(async () => {
     };
     io.emit('stats', stats);
   }
-  // שלח גם עדכוני הגרלות בזמן אמת
-  try {
-    const allGiveaways = await client.giveawaysManager.getAllGiveaways();
-    const activeGiveaways = allGiveaways.filter(g => !g.ended);
-    const endedGiveaways = allGiveaways.filter(g => g.ended);
-    io.emit('giveaways', { active: activeGiveaways, ended: endedGiveaways });
-  } catch (err) {
-    console.warn('⚠️ שגיאה בשליחת עדכוני הגרלות:', err);
-  }
+  // שלח גם עדכוני הגרלות בזמן אמת (כולל שמות הזוכים)
+  await broadcastGiveaways();
 }, 10000);
 
 // האזן לחיבורי Socket.io ושלח נתונים ראשוניים ללקוח
@@ -308,12 +330,27 @@ io.on('connection', async socket => {
     };
     socket.emit('stats', stats);
   }
-  // שלח נתוני הגרלות ראשוניים
+  // שלח נתוני הגרלות ראשוניים כולל שמות הזוכים
   try {
-    const allGiveaways = await client.giveawaysManager.getAllGiveaways();
-    const activeGiveaways = allGiveaways.filter(g => !g.ended);
-    const endedGiveaways = allGiveaways.filter(g => g.ended);
-    socket.emit('giveaways', { active: activeGiveaways, ended: endedGiveaways });
+    const all = await client.giveawaysManager.getAllGiveaways();
+    const active = all.filter(g => !g.ended);
+    const ended = all.filter(g => g.ended);
+    const endedWithNames = await Promise.all(ended.map(async g => {
+      let winnerNames = [];
+      if (Array.isArray(g.winnerIds) && g.winnerIds.length > 0) {
+        const names = await Promise.all(g.winnerIds.map(async id => {
+          try {
+            const user = await client.users.fetch(id);
+            return user ? user.username : null;
+          } catch {
+            return null;
+          }
+        }));
+        winnerNames = names.filter(Boolean);
+      }
+      return { ...g, winnerNames };
+    }));
+    socket.emit('giveaways', { active, ended: endedWithNames });
   } catch (err) {
     console.warn('⚠️ שגיאה בקריאת נתוני הגרלות:', err);
   }

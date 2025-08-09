@@ -106,9 +106,8 @@ function setupDashboard(client, guild, app) {
         menu: {
           stats: '📊 סטטיסטיקות',
           giveaways: '🎁 הגרלות',
-          messages: '💬 הודעות',
           filters: '❌ סינון',
-          ticket: '🎟️ טיקטים',
+          tickets: '🎟️ טיקטים',
           invites: '📨 הזמנות'
         },
         sections: {
@@ -116,9 +115,8 @@ function setupDashboard(client, guild, app) {
           createGiveawayTitle: '🎁 יצירת הגרלה חדשה',
           activeGiveawaysTitle: '🎉 הגרלות פעילות',
           endedGiveawaysTitle: '🕑 הגרלות שהסתיימו',
-          messagesTitle: '💬 ניהול הודעות',
           filtersTitle: '❌ סינון מילים / קישורים',
-          ticketTitle: '🎟️ שליחת טיקט',
+          ticketsTitle: '🎟️ טיקטים',
           invitesTitle: '📨 הזמנות'
         },
         actions: {
@@ -131,9 +129,8 @@ function setupDashboard(client, guild, app) {
         menu: {
           stats: '📊 Stats',
           giveaways: '🎁 Giveaways',
-          messages: '💬 Messages',
           filters: '❌ Filters',
-          ticket: '🎟️ Tickets',
+          tickets: '🎟️ Tickets',
           invites: '📨 Invites'
         },
         sections: {
@@ -141,9 +138,8 @@ function setupDashboard(client, guild, app) {
           createGiveawayTitle: '🎁 Create new giveaway',
           activeGiveawaysTitle: '🎉 Active giveaways',
           endedGiveawaysTitle: '🕑 Ended giveaways',
-          messagesTitle: '💬 Manage messages',
           filtersTitle: '❌ Word / link filtering',
-          ticketTitle: '🎟️ Send ticket',
+          ticketsTitle: '🎟️ Tickets',
           invitesTitle: '📨 Invites'
         },
         actions: {
@@ -292,8 +288,25 @@ app.post("/send-ticket-button", async (req, res) => {
   });
 
   app.get("/api/giveaways", async (req, res) => {
-    const giveaways = await client.giveawaysManager.getAllGiveaways();
-    res.json(giveaways);
+    const all = await client.giveawaysManager.getAllGiveaways();
+    // enrich ended giveaways with winner names
+    const enriched = await Promise.all(all.map(async g => {
+      // only if ended and winner IDs exist
+      let winnerNames = [];
+      if (g.ended && Array.isArray(g.winnerIds) && g.winnerIds.length > 0) {
+        const names = await Promise.all(g.winnerIds.map(async id => {
+          try {
+            const user = await client.users.fetch(id);
+            return user ? user.username : null;
+          } catch {
+            return null;
+          }
+        }));
+        winnerNames = names.filter(Boolean);
+      }
+      return { ...g, winnerNames };
+    }));
+    res.json(enriched);
   });
 
   app.post("/end-giveaway/:id", async (req, res) => {
@@ -320,6 +333,32 @@ app.post("/send-ticket-button", async (req, res) => {
     if (giveaway) await client.giveawaysManager.delete(giveaway.messageId);
     const lang = req.query.lang || 'he';
     res.redirect("/#giveaways?lang=" + lang);
+  });
+
+  // Extend the duration of an existing giveaway by adding extra time
+  app.post("/extend-giveaway/:id", async (req, res) => {
+    const id = req.params.id;
+    const additional = req.body.time?.trim();
+    const lang = req.query.lang || 'he';
+    // Validate time string
+    if (!additional) return res.status(400).send("Missing time");
+    const giveaway = client.giveawaysManager.giveaways.find(g => g.messageId === id);
+    if (!giveaway) return res.status(404).send("Giveaway not found");
+    let msToAdd;
+    try {
+      msToAdd = ms(additional);
+    } catch {
+      return res.status(400).send("Invalid time format");
+    }
+    try {
+      await client.giveawaysManager.edit(giveaway.messageId, { addTime: msToAdd });
+      // broadcast update to clients
+      await broadcastGiveaways?.();
+      res.redirect("/#giveaways?lang=" + lang);
+    } catch (err) {
+      console.error("Error extending giveaway:", err);
+      res.status(500).send("Failed to extend");
+    }
   });
 
   // app.listen הוסר – מנוהל דרך main.js
