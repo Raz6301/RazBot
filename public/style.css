@@ -292,6 +292,43 @@ form[action*="reroll-giveaway"] button {
   }
 }
 
+/* ---------------------------------------------------------------------
+   Professional styling overrides
+   These overrides refine the appearance of the dashboard to achieve a more
+   polished look. Borders use semi‑transparent versions of the primary
+   colour, shadows are softened and the sidebar is offset below the top
+   bar to prevent overlap.
+*/
+
+/* Sidebar tweaks: remove heavy shadow and offset below the top bar */
+.sidebar {
+  margin-top: 60px;
+  box-shadow: none;
+}
+
+/* Card appearance: lighter border and softer shadow */
+.dashboard-card {
+  border: 1px solid rgba(94, 234, 90, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-radius: 14px;
+}
+
+/* Remove glow effect on headings inside cards */
+.dashboard-card h2 {
+  text-shadow: none;
+}
+
+/* Refine stat cards */
+.stat {
+  border: 1px solid rgba(94, 234, 90, 0.4);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* Flatten the topbar shadow for cleaner header */
+.topbar {
+  box-shadow: none;
+}
+
 ul {
   padding-right: 20px;
 }
